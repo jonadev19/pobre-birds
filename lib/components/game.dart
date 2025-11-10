@@ -16,6 +16,8 @@ import 'enemy.dart';
 import 'ground.dart';
 import 'player.dart';
 
+enum GamePhase { splash, playing }
+
 class MyPhysicsGame extends Forge2DGame {
   MyPhysicsGame()
     : super(
@@ -26,6 +28,11 @@ class MyPhysicsGame extends Forge2DGame {
   late final XmlSpriteSheet aliens;
   late final XmlSpriteSheet elements;
   late final XmlSpriteSheet tiles;
+  late final Sprite _backgroundSprite;
+
+  GamePhase _phase = GamePhase.splash;
+  bool _assetsReady = false;
+  bool _hasStarted = false;
 
   @override
   FutureOr<void> onLoad() async {
@@ -48,13 +55,23 @@ class MyPhysicsGame extends Forge2DGame {
     aliens = spriteSheets[0];
     elements = spriteSheets[1];
     tiles = spriteSheets[2];
-
-    await world.add(Background(sprite: Sprite(backgroundImage)));
-    await addGround();
-    unawaited(addBricks().then((_) => addEnemies()));
-    await addPlayer();
+    _backgroundSprite = Sprite(backgroundImage);
+    _assetsReady = true;
 
     return super.onLoad();
+  }
+
+  Future<void> startGame() async {
+    if (!_assetsReady || _hasStarted) {
+      return;
+    }
+    _hasStarted = true;
+    _phase = GamePhase.playing;
+    await world.add(Background(sprite: _backgroundSprite));
+    await addGround();
+    enemiesFullyAdded = false;
+    unawaited(addBricks().then((_) => addEnemies()));
+    await addPlayer();
   }
 
   Future<void> addGround() {
@@ -106,6 +123,9 @@ class MyPhysicsGame extends Forge2DGame {
 
   @override
   void update(double dt) {
+    if (_phase != GamePhase.playing) {
+      return;
+    }
     super.update(dt);
     if (isMounted &&
         world.children.whereType<Player>().isEmpty &&
