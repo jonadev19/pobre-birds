@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,12 +17,16 @@ class MainMenuOverlay extends StatefulWidget {
 }
 
 class _MainMenuOverlayState extends State<MainMenuOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _pulseController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1400),
     lowerBound: 0.95,
     upperBound: 1.05,
+  )..repeat(reverse: true);
+  late final AnimationController _cloudController = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 38),
   )..repeat(reverse: true);
 
   bool _isStarting = false;
@@ -28,6 +34,7 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
   @override
   void dispose() {
     _pulseController.dispose();
+    _cloudController.dispose();
     super.dispose();
   }
 
@@ -65,20 +72,36 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
           );
 
           return Container(
-            color: const Color(0xFF74C0F9),
+            color: const Color(0xFF01ADFF),
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                      Colors.lightBlueAccent.withOpacity(0.15),
-                      BlendMode.srcATop,
-                    ),
-                    child: Image.asset(
-                      'assets/sprites/clouds.jpg',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                    ),
+                  child: AnimatedBuilder(
+                    animation: _cloudController,
+                    builder: (context, child) {
+                      final easedValue =
+                          Curves.easeInOut.transform(_cloudController.value);
+                      final slide = lerpDouble(-0.12, 0.12, easedValue)!;
+
+                      return FractionalTranslation(
+                        translation: Offset(slide, 0),
+                        child: FractionallySizedBox(
+                          widthFactor: 1.4,
+                          heightFactor: 1.15,
+                          child: ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              Colors.lightBlueAccent.withOpacity(0.1),
+                              BlendMode.srcATop,
+                            ),
+                            child: Image.asset(
+                              'assets/sprites/clouds.jpg',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.centerLeft,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 Positioned.fill(
