@@ -2,37 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:math';
-
 import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
-import 'package:flutter/material.dart';
 
 import 'body_component_with_user_data.dart';
 
 const enemySize = 5.0;
-
-enum EnemyColor {
-  pink(color: 'pink', boss: false),
-  blue(color: 'blue', boss: false),
-  green(color: 'green', boss: false),
-  yellow(color: 'yellow', boss: false),
-  pinkBoss(color: 'pink', boss: true),
-  blueBoss(color: 'blue', boss: true),
-  greenBoss(color: 'green', boss: true),
-  yellowBoss(color: 'yellow', boss: true);
-
-  final bool boss;
-  final String color;
-
-  const EnemyColor({required this.color, required this.boss});
-
-  static EnemyColor get randomColor =>
-      EnemyColor.values[Random().nextInt(EnemyColor.values.length)];
-
-  String get fileName =>
-      'alien${color.capitalize}_${boss ? 'suit' : 'square'}.png';
-}
 
 class Enemy extends BodyComponentWithUserData with ContactCallbacks {
   Enemy(Vector2 position, Sprite sprite)
@@ -78,9 +53,4 @@ class Enemy extends BodyComponentWithUserData with ContactCallbacks {
       removeFromParent();
     }
   }
-}
-
-extension on String {
-  String get capitalize =>
-      characters.first.toUpperCase() + characters.skip(1).toLowerCase().join();
 }

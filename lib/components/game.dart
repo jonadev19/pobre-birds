@@ -10,6 +10,8 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame_kenney_xml/flame_kenney_xml.dart';
 import 'package:flutter/material.dart';
 
+import '../assets/enemy_sprites.dart';
+import '../assets/player_sprites.dart';
 import 'background.dart';
 import 'brick.dart';
 import 'enemy.dart';
@@ -25,7 +27,8 @@ class MyPhysicsGame extends Forge2DGame {
         camera: CameraComponent.withFixedResolution(width: 800, height: 600),
       );
 
-  late final XmlSpriteSheet aliens;
+  late final XmlSpriteSheet playerSprites;
+  late final XmlSpriteSheet enemySprites;
   late final XmlSpriteSheet elements;
   late final XmlSpriteSheet tiles;
   late final Sprite _backgroundSprite;
@@ -33,28 +36,28 @@ class MyPhysicsGame extends Forge2DGame {
   GamePhase _phase = GamePhase.splash;
   bool _assetsReady = false;
   bool _hasStarted = false;
+  bool _isPaused = false;
+  PlayerSprite _selectedPlayerSprite = PlayerSprite.random();
 
   @override
   FutureOr<void> onLoad() async {
     final backgroundImage = await images.load('colored_grass.png');
-    final spriteSheets = await Future.wait([
-      XmlSpriteSheet.load(
-        imagePath: 'spritesheet_aliens.png',
-        xmlPath: 'spritesheet_aliens.xml',
-      ),
-      XmlSpriteSheet.load(
-        imagePath: 'spritesheet_elements.png',
-        xmlPath: 'spritesheet_elements.xml',
-      ),
-      XmlSpriteSheet.load(
-        imagePath: 'spritesheet_tiles.png',
-        xmlPath: 'spritesheet_tiles.xml',
-      ),
-    ]);
-
-    aliens = spriteSheets[0];
-    elements = spriteSheets[1];
-    tiles = spriteSheets[2];
+    playerSprites = await XmlSpriteSheet.load(
+      imagePath: 'spritesheet_players.png',
+      xmlPath: 'spritesheet_players.xml',
+    );
+    enemySprites = await XmlSpriteSheet.load(
+      imagePath: 'spritesheet_enemies.png',
+      xmlPath: 'spritesheet_enemies.xml',
+    );
+    elements = await XmlSpriteSheet.load(
+      imagePath: 'spritesheet_elements.png',
+      xmlPath: 'spritesheet_elements.xml',
+    );
+    tiles = await XmlSpriteSheet.load(
+      imagePath: 'spritesheet_tiles.png',
+      xmlPath: 'spritesheet_tiles.xml',
+    );
     _backgroundSprite = Sprite(backgroundImage);
     _assetsReady = true;
 
@@ -67,12 +70,24 @@ class MyPhysicsGame extends Forge2DGame {
     }
     _hasStarted = true;
     _phase = GamePhase.playing;
-    await world.add(Background(sprite: _backgroundSprite));
-    await addGround();
-    enemiesFullyAdded = false;
-    unawaited(addBricks().then((_) => addEnemies()));
-    await addPlayer();
+    await _buildWorld();
   }
+
+  bool get assetsReady => _assetsReady;
+  bool get hasStarted => _hasStarted;
+  bool get isPaused => _isPaused;
+
+  PlayerSprite get selectedPlayerSprite => _selectedPlayerSprite;
+
+  void selectPlayerSprite(PlayerSprite sprite) {
+    _selectedPlayerSprite = sprite;
+  }
+
+  Sprite playerSpriteFor(PlayerSprite sprite) =>
+      playerSprites.getSprite(sprite.fileName);
+
+  Sprite enemySpriteFor(EnemySprite sprite) =>
+      enemySprites.getSprite(sprite.fileName);
 
   Future<void> addGround() {
     return world.addAll([
@@ -117,9 +132,59 @@ class MyPhysicsGame extends Forge2DGame {
   Future<void> addPlayer() async => world.add(
     Player(
       Vector2(camera.visibleWorldRect.left * 2 / 3, 0),
-      aliens.getSprite(PlayerColor.randomColor.fileName),
+      playerSpriteFor(_selectedPlayerSprite),
     ),
   );
+
+  Future<void> pauseGame() async {
+    if (!_hasStarted || _isPaused) {
+      return;
+    }
+    _isPaused = true;
+    pauseEngine();
+  }
+
+  Future<void> resumeGame() async {
+    if (!_isPaused) {
+      return;
+    }
+    _isPaused = false;
+    resumeEngine();
+  }
+
+  Future<void> restartGame() async {
+    if (!_assetsReady) {
+      return;
+    }
+    await resumeGame();
+    await _clearWorld();
+    _phase = GamePhase.playing;
+    _hasStarted = true;
+    await _buildWorld();
+  }
+
+  Future<void> resetToMenu() async {
+    await resumeGame();
+    await _clearWorld();
+    _phase = GamePhase.splash;
+    _hasStarted = false;
+    enemiesFullyAdded = false;
+  }
+
+  Future<void> _buildWorld() async {
+    await world.add(Background(sprite: _backgroundSprite));
+    await addGround();
+    enemiesFullyAdded = false;
+    unawaited(addBricks().then((_) => addEnemies()));
+    await addPlayer();
+  }
+
+  Future<void> _clearWorld() async {
+    final components = world.children.toList();
+    for (final component in components) {
+      component.removeFromParent();
+    }
+  }
 
   @override
   void update(double dt) {
@@ -166,7 +231,7 @@ class MyPhysicsGame extends Forge2DGame {
                 (_random.nextDouble() * 7 - 3.5),
             (_random.nextDouble() * 3),
           ),
-          aliens.getSprite(EnemyColor.randomColor.fileName),
+          enemySpriteFor(EnemySprite.random()),
         ),
       );
       await Future<void>.delayed(const Duration(seconds: 1));

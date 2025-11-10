@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'customization_overlay.dart';
 import 'game.dart';
+import 'hud_overlay.dart';
 
 class MainMenuOverlay extends StatefulWidget {
   const MainMenuOverlay({super.key, required this.game});
@@ -47,14 +49,18 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
     if (!mounted) {
       return;
     }
-    widget.game.overlays.remove(MainMenuOverlay.overlayId);
+    widget.game.overlays
+      ..remove(CustomizationOverlay.overlayId)
+      ..remove(MainMenuOverlay.overlayId);
+    if (!widget.game.overlays.isActive(HudOverlay.overlayId)) {
+      widget.game.overlays.add(HudOverlay.overlayId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
-      color: Colors.blueGrey.shade900.withOpacity(0.35),
+      color: Colors.blueGrey.shade900.withValues(alpha: 0.35),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
@@ -66,7 +72,7 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
               Shadow(
                 offset: const Offset(4, 4),
                 blurRadius: 10,
-                color: Colors.red.shade900.withOpacity(0.8),
+                color: Colors.red.shade900.withValues(alpha: 0.8),
               ),
             ],
           );
@@ -79,8 +85,9 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                   child: AnimatedBuilder(
                     animation: _cloudController,
                     builder: (context, child) {
-                      final easedValue =
-                          Curves.easeInOut.transform(_cloudController.value);
+                      final easedValue = Curves.easeInOut.transform(
+                        _cloudController.value,
+                      );
                       final slide = lerpDouble(-0.12, 0.12, easedValue)!;
 
                       return FractionalTranslation(
@@ -90,7 +97,7 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                           heightFactor: 1.15,
                           child: ColorFiltered(
                             colorFilter: ColorFilter.mode(
-                              Colors.lightBlueAccent.withOpacity(0.1),
+                              Colors.lightBlueAccent.withValues(alpha: 0.1),
                               BlendMode.srcATop,
                             ),
                             child: Image.asset(
@@ -109,8 +116,8 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.0),
-                          Colors.white.withOpacity(0.2),
+                          Colors.white.withValues(alpha: 0.0),
+                          Colors.white.withValues(alpha: 0.2),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -122,13 +129,17 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                   child: LayoutBuilder(
                     builder: (context, safeConstraints) {
                       const baselineHeight = 540;
-                      final scaleFactor = (safeConstraints.maxHeight / baselineHeight)
-                          .clamp(0.65, 1.0);
-                      final titleSize =
-                          (isLandscape ? 70 : 82) * scaleFactor;
+                      final scaleFactor =
+                          (safeConstraints.maxHeight / baselineHeight).clamp(
+                            0.65,
+                            1.0,
+                          );
+                      final titleSize = (isLandscape ? 70 : 82) * scaleFactor;
                       final buttonSize = 180 * scaleFactor;
                       final iconSize = 110 * scaleFactor.clamp(0.8, 1.0);
                       final gapLarge = 48 * scaleFactor;
+                      final gapMedium = 28 * scaleFactor;
+                      final secondaryButtonHeight = 74 * scaleFactor;
 
                       return Padding(
                         padding: EdgeInsets.symmetric(
@@ -150,7 +161,9 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                                 Text(
                                   'CHAFA BIRD',
                                   textAlign: TextAlign.center,
-                                  style: titleStyle.copyWith(fontSize: titleSize),
+                                  style: titleStyle.copyWith(
+                                    fontSize: titleSize,
+                                  ),
                                 ),
                                 SizedBox(height: gapLarge),
                                 ScaleTransition(
@@ -163,41 +176,119 @@ class _MainMenuOverlayState extends State<MainMenuOverlay>
                                         shape: const CircleBorder(),
                                         backgroundColor:
                                             Colors.redAccent.shade400,
-                                            foregroundColor: Colors.white,
-                                            elevation: 12,
-                                            padding: EdgeInsets.zero,
-                                            side: const BorderSide(
-                                              color: Colors.white,
-                                              width: 4,
-                                            ),
-                                      ),
-                                      onPressed: _isStarting ? null : _handleStart,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                        horizontal: buttonSize * 0.08,
-                                        vertical: buttonSize * 0.12,
-                                      ),
-                                  child: Center(
-                                    child: Transform.translate(
-                                      offset: Offset(0, buttonSize * 0.025),
-                                      child: Text(
-                                        _isStarting ? 'CARGANDO' : 'PLAY',
-                                        textAlign: TextAlign.center,
-                                        textHeightBehavior:
-                                            const TextHeightBehavior(
-                                          applyHeightToFirstAscent: false,
-                                          applyHeightToLastDescent: false,
-                                        ),
-                                        style: GoogleFonts.luckiestGuy(
+                                        foregroundColor: Colors.white,
+                                        elevation: 12,
+                                        padding: EdgeInsets.zero,
+                                        side: const BorderSide(
                                           color: Colors.white,
-                                          letterSpacing: 3,
-                                          fontSize: iconSize * 0.42,
-                                          height: 0.9,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      onPressed: _isStarting
+                                          ? null
+                                          : _handleStart,
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: buttonSize * 0.08,
+                                          vertical: buttonSize * 0.12,
+                                        ),
+                                        child: Center(
+                                          child: Transform.translate(
+                                            offset: Offset(
+                                              0,
+                                              buttonSize * 0.025,
+                                            ),
+                                            child: Text(
+                                              _isStarting ? 'CARGANDO' : 'PLAY',
+                                              textAlign: TextAlign.center,
+                                              textHeightBehavior:
+                                                  const TextHeightBehavior(
+                                                    applyHeightToFirstAscent:
+                                                        false,
+                                                    applyHeightToLastDescent:
+                                                        false,
+                                                  ),
+                                              style: GoogleFonts.luckiestGuy(
+                                                color: Colors.white,
+                                                letterSpacing: 3,
+                                                fontSize: iconSize * 0.42,
+                                                height: 0.9,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
+                                SizedBox(height: gapMedium),
+                                SizedBox(
+                                  width: buttonSize * 1.4,
+                                  height: secondaryButtonHeight,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 6,
+                                        sigmaY: 6,
+                                      ),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.32,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.35,
+                                              ),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            foregroundColor: Colors.white,
+                                            side: BorderSide(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.65,
+                                              ),
+                                              width: 2,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(24),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: buttonSize * 0.2,
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            if (!widget.game.overlays.isActive(
+                                              CustomizationOverlay.overlayId,
+                                            )) {
+                                              widget.game.overlays.add(
+                                                CustomizationOverlay.overlayId,
+                                              );
+                                            }
+                                          },
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'PERSONALIZAR',
+                                              style: GoogleFonts.luckiestGuy(
+                                                letterSpacing: 3,
+                                                fontSize: iconSize * 0.33,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),

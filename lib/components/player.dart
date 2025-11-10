@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:math';
-
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
@@ -13,19 +11,6 @@ import 'package:flutter/material.dart';
 import 'body_component_with_user_data.dart';
 
 const playerSize = 5.0;
-
-enum PlayerColor {
-  pink,
-  blue,
-  green,
-  yellow;
-
-  static PlayerColor get randomColor =>
-      PlayerColor.values[Random().nextInt(PlayerColor.values.length)];
-
-  String get fileName =>
-      'alien${toString().split('.').last.capitalize}_round.png';
-}
 
 class Player extends BodyComponentWithUserData with DragCallbacks {
   Player(Vector2 position, Sprite sprite)
@@ -112,11 +97,6 @@ class Player extends BodyComponentWithUserData with DragCallbacks {
       add(RemoveEffect(delay: 5.0));
     }
   }
-}
-
-extension on String {
-  String get capitalize =>
-      characters.first.toUpperCase() + characters.skip(1).toLowerCase().join();
 }
 
 class _DragPainter extends CustomPainter {
